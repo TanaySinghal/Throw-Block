@@ -39,6 +39,11 @@ public class Move : MonoBehaviour {
 	public float hoverYPos = 3f;
 	float yPos;
 
+	// Sound
+	private AudioSource source;
+	private AudioClip pickSound;
+	private AudioClip throwSound;
+
 	void Awake () {
 		// We do not want rotation - I used rigid body just to include collisions between objects
 		this.GetComponent<Rigidbody> ().freezeRotation = true;
@@ -51,6 +56,11 @@ public class Move : MonoBehaviour {
 
 		// Set initial height to default height
 		yPos = defaultYPos;
+
+		// Set audio source
+		source = GetComponent<AudioSource>();
+		pickSound = Resources.Load<AudioClip> ("pick");
+		throwSound = Resources.Load<AudioClip> ("throw");
 	}
 
 	void Update () {
@@ -81,12 +91,13 @@ public class Move : MonoBehaviour {
 
 				float distance;
 				if (plane.Raycast (ray, out distance)) {
+					// Pick up object
 					transform.position = ray.GetPoint (distance);
 				}
 			}
 
-			// If our speed is faster than the throw trigger, 
-			if (speed > throwTrigger) {
+			// If our speed is faster than the throw trigger and we have enough history,
+			if (speed > throwTrigger && recentVelocities.Count == velocityHistoryCount) {
 				// Launch the object
 				launching = true;
 
@@ -95,6 +106,9 @@ public class Move : MonoBehaviour {
 
 				// Set launch velocity to a weighted average of the past velocities
 				launchVelocity = calculateWeightedLaunchVelocity ();
+
+				// Play sound
+				source.PlayOneShot(throwSound);
 			}
 		} 
 		// If we are launching,
@@ -175,7 +189,10 @@ public class Move : MonoBehaviour {
 	// Called when mouse is pressed down
 	void PressMouse() {
 		mousePressed = true;
+
+		// Only if we touched object though
 		StopLaunching ();
+		source.PlayOneShot(pickSound);
 	}
 
 	// Called when mouse is unpressed or when the object is thrown
